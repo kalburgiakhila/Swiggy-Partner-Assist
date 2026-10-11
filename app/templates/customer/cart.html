@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Cart · QuickEats{% endblock %}
+{% block hero_title %}Your cart{% endblock %}
+{% block hero_subtitle %}Review items and checkout in seconds.{% endblock %}
+{% block hero_cta %}
+  <a class="btn btn-warning btn-lg" href="{{ url_for('customer.checkout') }}"><i class="bi bi-bag-check"></i> Checkout</a>
+{% endblock %}
+{% block content %}
+  {% if not lines %}
+    <div class="card card-glass p-4">
+      <div class="text-white">Your cart is empty.</div>
+      <div class="text-white-50 small mt-2">Browse restaurants to add items.</div>
+    </div>
+  {% else %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        {% for line in lines %}
+          <div class="card card-glass p-3 mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="text-white fw-semibold">{{ line.item.name }}</div>
+                <div class="text-white-50 small">Price: {{ line.item.price_cents|money }}</div>
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                <form method="post" action="{{ url_for('customer.cart_dec_from_cart', item_id=line.item.id) }}">
+                  {{ csrf_field() }}
+                  <button class="btn btn-sm btn-outline-light"><i class="bi bi-dash-lg"></i></button>
+                </form>
+                <div class="text-white fw-semibold" style="min-width:28px;text-align:center;">{{ line.qty }}</div>
+                <form method="post" action="{{ url_for('customer.cart_inc', item_id=line.item.id) }}">
+                  {{ csrf_field() }}
+                  <button class="btn btn-sm btn-warning"><i class="bi bi-plus-lg"></i></button>
+                </form>
+              </div>
+              <div class="text-white fw-semibold">{{ line.line_total|money }}</div>
+              <form method="post" action="{{ url_for('customer.cart_remove', item_id=line.item.id) }}">
+                {{ csrf_field() }}
+                <button class="btn btn-sm btn-outline-light"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="col-lg-4">
+        <div class="card card-glass p-4">
+          <div class="d-flex justify-content-between text-white mb-2">
+            <span>Subtotal</span>
+            <span class="fw-semibold">{{ subtotal|money }}</span>
+          </div>
+          <div class="text-white-50 small mb-3">Delivery fee is added at checkout.</div>
+          <a class="btn btn-warning w-100" href="{{ url_for('customer.checkout') }}"><i class="bi bi-bag-check"></i> Checkout</a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

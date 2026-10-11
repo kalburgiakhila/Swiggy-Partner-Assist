@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Delivery · Order #{{ order.id }}{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% block hero_title %}Order #{{ order.id }}{% endblock %}
+{% block hero_subtitle %}{{ order.restaurant.name }} → {{ order.delivery_address }}{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card card-glass p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-white fw-semibold">Status: <span class="badge bg-info text-dark" id="statusBadge">{{ order.status }}</span></div>
+          <a class="btn btn-sm btn-outline-light" href="{{ url_for('delivery.dashboard') }}">Back</a>
+        </div>
+        {% if finance %}
+          <div class="text-white-50 small mt-2">
+            <i class="bi bi-cash-coin"></i> Earning: <span class="text-white">{{ finance.rider_earning_cents|money }}</span>
+          </div>
+          <div class="text-white-50 small mt-1">
+            Settlement: {{ finance.rider_settlement_status }}
+          </div>
+        {% endif %}
+        <hr class="border-light opacity-25" />
+        <div class="d-grid gap-2">
+          {% if order.status == 'ready_for_pickup' %}
+            <form method="post" action="{{ url_for('delivery.pickup', order_id=order.id) }}">
+              {{ csrf_field() }}
+              <button class="btn btn-warning btn-lg w-100"><i class="bi bi-bag-check"></i> Picked up</button>
+            </form>
+          {% endif %}
+          {% if order.status == 'picked_up' %}
+            <form method="post" action="{{ url_for('delivery.deliver', order_id=order.id) }}">
+              {{ csrf_field() }}
+              <button class="btn btn-success btn-lg w-100"><i class="bi bi-check2-circle"></i> Delivered</button>
+            </form>
+            <form method="post" action="{{ url_for('delivery.assist', order_id=order.id) }}" onsubmit="return confirm('Reassign to a nearby partner?');">
+              {{ csrf_field() }}
+              <button class="btn btn-outline-light w-100"><i class="bi bi-people"></i> Partner assist (handoff)</button>
+            </form>
+          {% endif %}
+          <button class="btn btn-outline-light" type="button" id="toggleShare"><i class="bi bi-broadcast"></i> Start sharing live location</button>
+        </div>
+        <div class="text-white-50 small mt-3">Keep this page open while delivering to stream your GPS to the customer.</div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card card-glass p-3">
+        <div class="d-flex justify-content-between align-items-center px-2 py-1">
+          <div class="text-white fw-semibold"><i class="bi bi-map"></i> Map</div>
+          <div class="text-white-50 small" id="shareState">Not sharing</div>
+        </div>
+        <div class="px-2 pb-2 d-flex justify-content-between">
+          <div class="text-white-50 small" id="routeMeta">Route: loading…</div>
+          <div class="text-white-50 small" id="etaMeta"></div>
+        </div>
+        <div id="map" style="height: 420px; border-radius: 14px;"></div>
+        <div class="text-white-50 small px-2 pt-2">Route uses free OSRM road routing (A* fallback). Rider marker is your live GPS.</div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const orderId = {{ order.id|tojson }};
+    const restLat = {{ (order.restaurant.lat or config.MAP_DEFAULT_CENTER_LAT)|tojson }};
+    const restLng = {{ (order.restaurant.lng or config.MAP_DEFAULT_CENTER_LNG)|tojson }};
+    const destLat = {{ (order.delivery_lat or config.MAP_DEFAULT_CENTER_LAT)|tojson }};
+    const destLng = {{ (order.delivery_lng or config.MAP_DEFAULT_CENTER_LNG)|tojson }};
+
+    const map = L.map('map').setView([destLat, destLng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    const restMarker = L.marker([restLat, restLng]).addTo(map).bindPopup("Restaurant");
+    const destMarker = L.marker([destLat, destLng]).addTo(map).bindPopup("Destination");
+    let riderMarker = null;
+    let routeLine = null;
+    const group = L.featureGroup([restMarker, destMarker]).addTo(map);
+    map.fitBounds(group.getBounds().pad(0.3));
+
+    fetch(`/api/orders/${orderId}/route`).then(r=>r.json()).then(data=>{
+      const routeMeta = document.getElementById('routeMeta');
+      const etaMeta = document.getElementById('etaMeta');
+      if (routeMeta) routeMeta.textContent = `Route: ${data.source || 'n/a'}`;
+      if (etaMeta && data.duration_s) {
+        const mins = Math.max(1, Math.round(data.duration_s / 60));
+        etaMeta.textContent = `ETA: ~${mins} min`;
+      }
+      const pts = (data.points || []).map(p => [p.lat, p.lng]);
+      if (pts.length > 1) {
+        routeLine = L.polyline(pts, {color:'#ffb300', weight: 5, opacity: 0.9}).addTo(map);
+      }
+    });
+
+    const socket = io("/track");
+    socket.on("connect", () => {
+      socket.emit("join_order", {order_id: orderId});
+    });
+
+    let sharing = false;
+    let watchId = null;
+    const shareBtn = document.getElementById("toggleShare");
+    const shareState = document.getElementById("shareState");
+    function setSharing(on){
+      sharing = on;
+      shareBtn.innerHTML = on ? '<i class="bi bi-broadcast"></i> Stop sharing live location' : '<i class="bi bi-broadcast"></i> Start sharing live location';
+      shareState.textContent = on ? 'Sharing live location' : 'Not sharing';
+    }
+    setSharing(false);
+
+    function startSharing(){
+      if (!navigator.geolocation) return;
+      watchId = navigator.geolocation.watchPosition((pos) => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        socket.emit("location_update", {order_id: orderId, lat: lat, lng: lng, accuracy_m: acc});
+        if (!riderMarker) riderMarker = L.marker([lat, lng]).addTo(map).bindPopup("You (rider)");
+        riderMarker.setLatLng([lat, lng]);
+      }, (err) => console.warn(err), { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 });
+      setSharing(true);
+    }
+    function stopSharing(){
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      setSharing(false);
+    }
+    shareBtn.addEventListener("click", () => {
+      if (!sharing) startSharing(); else stopSharing();
+    });
+  </script>
+{% endblock %}

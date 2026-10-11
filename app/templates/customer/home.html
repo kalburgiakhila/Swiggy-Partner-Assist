@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Restaurants · QuickEats{% endblock %}
+{% block hero_title %}Discover restaurants near you{% endblock %}
+{% block hero_subtitle %}Fresh food, fast delivery, and live tracking.{% endblock %}
+{% block hero_cta %}
+  <div class="search-pill mt-3">
+    <div class="d-flex gap-2 align-items-center">
+      <i class="bi bi-search text-white-50"></i>
+      <input id="searchInput" class="form-control border-0" style="background: transparent !important;" placeholder="Search restaurants (e.g., biryani, burgers, healthy)..." />
+      <a class="btn btn-sm btn-warning" href="{{ url_for('auth.login') if not current_user.is_authenticated else url_for('customer.orders') }}">
+        {{ 'Login' if not current_user.is_authenticated else 'My orders' }}
+      </a>
+    </div>
+    <div class="mt-3 d-flex flex-wrap gap-2">
+      <span class="chip"><i class="bi bi-fire text-warning"></i> Fast delivery</span>
+      <span class="chip"><i class="bi bi-egg-fried text-white-50"></i> Indian</span>
+      <span class="chip"><i class="bi bi-burger text-white-50"></i> Burgers</span>
+      <span class="chip"><i class="bi bi-heart-pulse text-danger"></i> Healthy</span>
+      <span class="chip"><i class="bi bi-cup-hot text-info"></i> Beverages</span>
+    </div>
+  </div>
+{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    {% for r in restaurants %}
+      <div class="col-sm-6 col-lg-4">
+        <a class="card restaurant-card text-decoration-none fade-in" data-restaurant-card data-name="{{ r.name }}" data-desc="{{ r.description or '' }}" href="{{ url_for('customer.restaurant_detail', restaurant_id=r.id) }}">
+          <div class="card-img-top restaurant-hero" style="background-image: url('{{ r.hero_image_url or '/static/img/hero.jpg' }}');"></div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="h5 mb-1 text-white">{{ r.name }}</div>
+                <div class="text-white-50 small">{{ r.description or '' }}</div>
+              </div>
+              {% if r.is_open %}
+                <span class="badge rounded-pill bg-success">Open</span>
+              {% else %}
+                <span class="badge rounded-pill bg-secondary">Closed</span>
+              {% endif %}
+            </div>
+            <div class="text-white-50 small mt-3">
+              <i class="bi bi-geo-alt"></i> {{ r.address or 'Address not set' }}
+            </div>
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+              <span class="chip"><i class="bi bi-star-fill text-warning"></i> {{ '4.' ~ (r.id % 7 + 1) }}</span>
+              <span class="chip"><i class="bi bi-clock text-white-50"></i> {{ 25 + (r.id % 10) }}-{{ 35 + (r.id % 10) }} min</span>
+              <span class="chip"><i class="bi bi-currency-rupee text-white-50"></i> {{ 250 + (r.id % 5)*50 }} for two</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Restaurants · Admin · QuickEats{% endblock %}
+{% block hero_title %}Restaurants{% endblock %}
+{% block hero_subtitle %}All onboarded restaurants and owners.{% endblock %}
+{% block content %}
+  <div class="card card-glass p-4">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Owner</th>
+            <th>Open</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in restaurants %}
+            <tr>
+              <td>{{ r.id }}</td>
+              <td>{{ r.name }}</td>
+              <td>{{ r.owner.full_name }}</td>
+              <td>{{ 'Yes' if r.is_open else 'No' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

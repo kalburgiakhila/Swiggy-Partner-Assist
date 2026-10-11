@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Restaurant Profile · QuickEats{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% block hero_title %}Restaurant profile{% endblock %}
+{% block hero_subtitle %}Add your restaurant details and pin your location.{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card card-glass p-4">
+        <form method="post">
+          {{ form.csrf_token }}
+          <div class="mb-3">
+            {{ form.name.label(class_="form-label text-white") }}
+            {{ form.name(class_="form-control") }}
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class_="form-label text-white") }}
+            {{ form.description(class_="form-control", rows="3") }}
+          </div>
+          <div class="mb-3">
+            {{ form.address.label(class_="form-label text-white") }}
+            {{ form.address(class_="form-control") }}
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-white">Latitude</label>
+              {{ form.lat(class_="form-control", id="rest_lat") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-white">Longitude</label>
+              {{ form.lng(class_="form-control", id="rest_lng") }}
+            </div>
+          </div>
+          <div class="mb-3 mt-3">
+            {{ form.hero_image_url.label(class_="form-label text-white") }}
+            {{ form.hero_image_url(class_="form-control", placeholder="https://...") }}
+          </div>
+          <div class="d-grid">
+            {{ form.submit(class_="btn btn-warning btn-lg") }}
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card card-glass p-3">
+        <div class="d-flex justify-content-between align-items-center px-2 py-1">
+          <div class="text-white fw-semibold"><i class="bi bi-map"></i> Restaurant location</div>
+          <button class="btn btn-sm btn-outline-light" type="button" id="locateBtn"><i class="bi bi-crosshair"></i> Use my location</button>
+        </div>
+        <div id="map" style="height: 420px; border-radius: 14px;"></div>
+        <div class="text-white-50 small px-2 pt-2">Click the map to set the pin.</div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const defaultLat = {{ config.MAP_DEFAULT_CENTER_LAT|tojson }};
+    const defaultLng = {{ config.MAP_DEFAULT_CENTER_LNG|tojson }};
+    const defaultZoom = {{ config.MAP_DEFAULT_ZOOM|tojson }};
+    const latInput = document.getElementById('rest_lat');
+    const lngInput = document.getElementById('rest_lng');
+    const startLat = parseFloat(latInput.value || defaultLat);
+    const startLng = parseFloat(lngInput.value || defaultLng);
+
+    const map = L.map('map').setView([startLat, startLng], defaultZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    let marker = L.marker([startLat, startLng], {draggable:true}).addTo(map);
+    function setLatLng(lat, lng){
+      latInput.value = lat.toFixed(6);
+      lngInput.value = lng.toFixed(6);
+      marker.setLatLng([lat, lng]);
+    }
+    marker.on('dragend', () => { const p = marker.getLatLng(); setLatLng(p.lat, p.lng); });
+    map.on('click', (e) => setLatLng(e.latlng.lat, e.latlng.lng));
+    document.getElementById('locateBtn').addEventListener('click', () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        map.setView([lat, lng], 16);
+        setLatLng(lat, lng);
+      }, (err) => console.warn(err), { enableHighAccuracy: true, timeout: 8000 });
+    });
+  </script>
+{% endblock %}
+

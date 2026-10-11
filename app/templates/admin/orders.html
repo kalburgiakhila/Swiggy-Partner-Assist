@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Orders · Admin · QuickEats{% endblock %}
+{% block hero_title %}Orders{% endblock %}
+{% block hero_subtitle %}All orders and their current lifecycle state.{% endblock %}
+{% block content %}
+  <div class="card card-glass p-4">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Restaurant</th>
+            <th>Rider</th>
+            <th>Status</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+            <tr>
+              <td>{{ o.id }}</td>
+              <td>{{ o.customer.full_name }}</td>
+              <td>{{ o.restaurant.name }}</td>
+              <td>{{ o.delivery_partner.full_name if o.delivery_partner else '-' }}</td>
+              <td><span class="badge bg-info text-dark">{{ o.status }}</span></td>
+              <td class="fw-semibold">{{ o.total_cents|money }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

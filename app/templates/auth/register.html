@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sign up · QuickEats{% endblock %}
+{% block hero_title %}Create your account{% endblock %}
+{% block hero_subtitle %}Customer, owner, or delivery partner — pick your role.{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card card-glass p-4">
+        <form method="post" action="{{ url_for('auth.register_post') }}">
+          {{ form.csrf_token }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ form.full_name.label(class_="form-label") }}
+              {{ form.full_name(class_="form-control", placeholder="Full name") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.phone.label(class_="form-label") }}
+              {{ form.phone(class_="form-control", placeholder="Phone (optional)") }}
+            </div>
+            <div class="col-12">
+              {{ form.email.label(class_="form-label") }}
+              {{ form.email(class_="form-control", placeholder="Email") }}
+            </div>
+            <div class="col-12">
+              {{ form.role.label(class_="form-label") }}
+              {{ form.role(class_="form-select") }}
+              <div class="form-text text-white-50">Restaurant owners can add menu items and accept orders. Riders can accept deliveries.</div>
+            </div>
+            <div class="col-12">
+              {{ form.password.label(class_="form-label") }}
+              {{ form.password(class_="form-control", placeholder="Minimum 8 characters") }}
+            </div>
+          </div>
+          <div class="d-grid gap-2 mt-4">
+            {{ form.submit(class_="btn btn-warning btn-lg") }}
+            <a class="btn btn-outline-light" href="{{ url_for('auth.login') }}">I already have an account</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

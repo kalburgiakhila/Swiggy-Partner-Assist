@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Finance · Admin · QuickEats{% endblock %}
+{% block hero_title %}Finance{% endblock %}
+{% block hero_subtitle %}Commission, rider earnings, and restaurant payouts (demo).{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card card-glass p-4">
+        <div class="text-white-50 small">Commission (sum)</div>
+        <div class="h2 text-white fw-bold">{{ totals.commission|money }}</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card card-glass p-4">
+        <div class="text-white-50 small">Rider earnings (earned)</div>
+        <div class="h2 text-white fw-bold">{{ totals.rider|money }}</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card card-glass p-4">
+        <div class="text-white-50 small">Restaurant payouts (earned)</div>
+        <div class="h2 text-white fw-bold">{{ totals.payout|money }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-glass p-4 mt-4">
+    <div class="h5 text-white mb-3"><i class="bi bi-receipt"></i> Latest finance rows</div>
+    {% if not rows %}
+      <div class="text-white-50">No rows.</div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Payment</th>
+              <th>Commission</th>
+              <th>Rider</th>
+              <th>Restaurant</th>
+              <th>Settlements</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in rows %}
+              <tr>
+                <td>#{{ f.order_id }}</td>
+                <td>{{ f.payment_method }} · {{ f.payment_status }}</td>
+                <td class="fw-semibold">{{ f.platform_commission_cents|money }}</td>
+                <td class="fw-semibold">{{ f.rider_earning_cents|money }}</td>
+                <td class="fw-semibold">{{ f.restaurant_payout_cents|money }}</td>
+                <td class="text-white-50 small">Rider: {{ f.rider_settlement_status }} · Rest: {{ f.restaurant_settlement_status }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+

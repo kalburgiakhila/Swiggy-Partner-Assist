@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}{{ restaurant.name }} · QuickEats{% endblock %}
+{% block hero_title %}{{ restaurant.name }}{% endblock %}
+{% block hero_subtitle %}{{ restaurant.description or 'Browse the menu and add items to your cart.' }}{% endblock %}
+{% block hero_cta %}
+  <a class="btn btn-warning btn-lg" href="{{ url_for('customer.cart') }}">
+    <i class="bi bi-bag"></i> View cart
+  </a>
+{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card card-glass p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="h4 text-white mb-1">Menu</div>
+            <div class="text-white-50 small"><i class="bi bi-geo-alt"></i> {{ restaurant.address or 'Address not set' }}</div>
+          </div>
+          <span class="badge rounded-pill {{ 'bg-success' if restaurant.is_open else 'bg-secondary' }}">
+            {{ 'Open' if restaurant.is_open else 'Closed' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        {% for i in items %}
+          <div class="col-md-6">
+            <div class="card restaurant-card">
+              <div class="restaurant-hero" style="height:160px;background-image:url('{{ i.image_url or restaurant.hero_image_url or '/static/img/hero.jpg' }}');"></div>
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="h6 mb-1 text-white">{{ i.name }}</div>
+                    <div class="text-white-50 small">{{ i.description or '' }}</div>
+                  </div>
+                  <div class="text-white fw-semibold">{{ i.price_cents|money }}</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  {% if not i.is_available %}
+                    <span class="badge bg-secondary">Unavailable</span>
+                  {% else %}
+                    <div class="d-flex gap-2 align-items-center">
+                      <form method="post" action="{{ url_for('customer.cart_dec', item_id=i.id) }}">
+                        {{ csrf_field() }}
+                        <button class="btn btn-sm btn-outline-light"><i class="bi bi-dash-lg"></i></button>
+                      </form>
+                      <div class="text-white fw-semibold" style="min-width:24px;text-align:center;">{{ cart.get(i.id|string, 0) }}</div>
+                      <form method="post" action="{{ url_for('customer.cart_add', item_id=i.id) }}">
+                        {{ csrf_field() }}
+                        <button class="btn btn-sm btn-warning"><i class="bi bi-plus-lg"></i></button>
+                      </form>
+                    </div>
+                  {% endif %}
+                  <a class="btn btn-sm btn-outline-light" href="{{ url_for('customer.cart') }}"><i class="bi bi-bag"></i> Cart</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card card-glass p-4">
+        <div class="h5 text-white mb-2"><i class="bi bi-bag"></i> Cart</div>
+        <div class="text-white-50 small mb-3">Only one restaurant per order.</div>
+        <a class="btn btn-outline-light w-100" href="{{ url_for('customer.cart') }}">Go to cart</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

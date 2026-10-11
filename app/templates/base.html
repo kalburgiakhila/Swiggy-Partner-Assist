@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}QuickEats{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark glass-nav sticky-top">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('customer.home') }}">QuickEats</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('customer.home') }}">Restaurants</a></li>
+            {% if current_user.is_authenticated and current_user.role == 'customer' %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('customer.cart') }}"><i class="bi bi-bag"></i> Cart</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('customer.orders') }}"><i class="bi bi-receipt"></i> My orders</a></li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.role == 'restaurant_owner' %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('restaurant.dashboard') }}">Owner Dashboard</a></li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.role == 'delivery_partner' %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('delivery.dashboard') }}">Delivery Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('delivery.earnings') }}"><i class="bi bi-wallet2"></i> Earnings</a></li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin</a></li>
+            {% endif %}
+          </ul>
+          <div class="d-flex align-items-center gap-2">
+            {% if current_user.is_authenticated %}
+              <span class="text-white-50 small d-none d-lg-inline">Hi, {{ current_user.full_name }}</span>
+              <a class="btn btn-sm btn-outline-light" href="{{ url_for('auth.logout') }}">Logout</a>
+            {% else %}
+              <a class="btn btn-sm btn-outline-light" href="{{ url_for('auth.login') }}">Login</a>
+              <a class="btn btn-sm btn-warning" href="{{ url_for('auth.register') }}">Sign up</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div class="container py-5">
+          <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+              <h1 class="display-5 fw-bold text-white mb-2">{% block hero_title %}Order food fast.{% endblock %}</h1>
+              <p class="lead text-white-50 mb-4">{% block hero_subtitle %}Swiggy-like demo with live tracking and A* routing.{% endblock %}</p>
+              {% block hero_cta %}{% endblock %}
+            </div>
+            <div class="col-lg-5">
+              <div class="hero-card p-4">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-lightning-charge-fill text-warning"></i>
+                  <div class="text-white fw-semibold">Live order tracking</div>
+                </div>
+                <div class="small text-white-50 mt-2">
+                  Restaurant → Pickup → Deliver, with rider GPS updates in real-time.
+                </div>
+              </div>
+              <div class="hero-card p-4 mt-3">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-map-fill text-info"></i>
+                  <div class="text-white fw-semibold">Route estimation (A*)</div>
+                </div>
+                <div class="small text-white-50 mt-2">
+                  A* path is computed from restaurant to destination and shown on the map.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-overlay"></div>
+      </section>
+
+      <div class="container my-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for cat, msg in messages %}
+              <div class="alert alert-{{ cat }} shadow-sm">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

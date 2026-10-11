@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Delivery Dashboard · QuickEats{% endblock %}
+{% block hero_title %}Delivery Dashboard{% endblock %}
+{% block hero_subtitle %}Accept deliveries and share live location.{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card card-glass p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="h5 text-white mb-0"><i class="bi bi-inboxes"></i> Available orders</div>
+          <form method="post" action="{{ url_for('delivery.toggle_online') }}">
+            {{ csrf_field() }}
+            {% set online = rider_state.is_online if rider_state else false %}
+            <button class="btn btn-sm {{ 'btn-success' if online else 'btn-outline-light' }}">
+              <i class="bi bi-broadcast"></i> {{ 'Online' if online else 'Offline' }}
+            </button>
+          </form>
+        </div>
+        {% if not available %}
+          <div class="text-white-50">No orders ready right now.</div>
+        {% else %}
+          {% for o in available %}
+            <div class="p-3 mb-2 rounded-3" style="background: rgba(0,0,0,.20); border: 1px solid rgba(255,255,255,.08);">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="text-white fw-semibold">Order #{{ o.id }} · {{ o.total_cents|money }}</div>
+                <span class="badge bg-info text-dark">{{ o.status }}</span>
+              </div>
+              <div class="text-white-50 small mt-1">{{ o.restaurant.name }} → {{ o.delivery_address }}</div>
+              <form class="mt-2" method="post" action="{{ url_for('delivery.accept', order_id=o.id) }}">
+                {{ csrf_field() }}
+                <button class="btn btn-sm btn-warning"><i class="bi bi-check2"></i> Accept</button>
+              </form>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card card-glass p-4">
+        <div class="h5 text-white mb-3"><i class="bi bi-lightning-charge"></i> My active</div>
+        {% if not my_active %}
+          <div class="text-white-50">No active orders.</div>
+        {% else %}
+          {% for o in my_active %}
+            <div class="p-3 mb-2 rounded-3" style="background: rgba(0,0,0,.20); border: 1px solid rgba(255,255,255,.08);">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="text-white fw-semibold">Order #{{ o.id }}</div>
+                <span class="badge bg-info text-dark">{{ o.status }}</span>
+              </div>
+              <div class="text-white-50 small mt-1">{{ o.restaurant.name }}</div>
+              <a class="btn btn-sm btn-outline-light mt-2" href="{{ url_for('delivery.order', order_id=o.id) }}"><i class="bi bi-map"></i> Open</a>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const online = {{ (rider_state.is_online if rider_state else false)|tojson }};
+    if (online && navigator.geolocation) {
+      const socket = io("/track");
+      let lastSentAt = 0;
+      navigator.geolocation.watchPosition((pos) => {
+        const now = Date.now();
+        if (now - lastSentAt < 2500) return;
+        lastSentAt = now;
+        socket.emit("rider_heartbeat", {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      }, (err) => console.warn(err), { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 });
+    }
+  </script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Pay · Order #{{ order.id }} · QuickEats{% endblock %}
+{% block hero_title %}Complete payment{% endblock %}
+{% block hero_subtitle %}This is a simulation for demo purposes.{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card card-glass p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-white fw-semibold">Order #{{ order.id }} · {{ order.total_cents|money }}</div>
+          <span class="badge bg-info text-dark">{{ finance.payment_method }}</span>
+        </div>
+        <div class="text-white-50 small mt-2">Status: {{ finance.payment_status }}</div>
+        <hr class="border-light opacity-25" />
+
+        <form method="post">
+          {{ form.csrf_token }}
+          {% if finance.payment_method == 'upi' %}
+            <div class="mb-3">
+              {{ form.upi_id.label(class_="form-label text-white") }}
+              {{ form.upi_id(class_="form-control", placeholder="name@bank (demo)") }}
+            </div>
+          {% elif finance.payment_method == 'card' %}
+            <div class="mb-3">
+              {{ form.card_number.label(class_="form-label text-white") }}
+              {{ form.card_number(class_="form-control", placeholder="4111 1111 1111 1111 (demo)") }}
+              <div class="form-text">No real payment is processed.</div>
+            </div>
+          {% endif %}
+
+          <div class="d-grid gap-2">
+            {{ form.submit(class_="btn btn-warning btn-lg") }}
+            <a class="btn btn-outline-light" href="{{ url_for('customer.order_detail', order_id=order.id) }}">Back to order</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

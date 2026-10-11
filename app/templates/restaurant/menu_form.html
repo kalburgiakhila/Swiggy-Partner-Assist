@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if item else 'New' }} Menu Item · QuickEats{% endblock %}
+{% block hero_title %}{{ 'Edit' if item else 'Create' }} menu item{% endblock %}
+{% block hero_subtitle %}Add delicious items with images and pricing.{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card card-glass p-4">
+        <form method="post" action="{{ url_for('restaurant.menu_edit_post', item_id=item.id) if item else url_for('restaurant.menu_new_post') }}">
+          {{ form.csrf_token }}
+          <div class="mb-3">
+            {{ form.name.label(class_="form-label text-white") }}
+            {{ form.name(class_="form-control", placeholder="Item name") }}
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class_="form-label text-white") }}
+            {{ form.description(class_="form-control", rows="3", placeholder="Short description") }}
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ form.price_cents.label(class_="form-label text-white") }}
+              {{ form.price_cents(class_="form-control", placeholder="e.g. 25900 for ₹259.00") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-white">Availability</label>
+              <div class="form-check">
+                {{ form.is_available(class_="form-check-input") }}
+                {{ form.is_available.label(class_="form-check-label text-white-50") }}
+              </div>
+            </div>
+          </div>
+          <div class="mb-3 mt-3">
+            {{ form.image_url.label(class_="form-label text-white") }}
+            {{ form.image_url(class_="form-control", placeholder="https://...") }}
+            <div class="form-text">Use an Unsplash/Pexels image link or any direct image URL.</div>
+          </div>
+          <div class="d-grid gap-2">
+            {{ form.submit(class_="btn btn-warning btn-lg") }}
+            <a class="btn btn-outline-light" href="{{ url_for('restaurant.dashboard') }}">Back</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
